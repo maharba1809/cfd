@@ -1,1 +1,16 @@
+Under-expanded Supersonic Jet Numerical Simulation 3D CFD
+
+Methods 
+Full compressible fluid equations, mass, momentum, energy, ideal gas
+Compact Schemes 6th order finite differences
+LES turbulence model, convolution filter
+Refined mesh for shock waves
+Unidimensional Acoustic boundary conditions
+Initialization profile hyperbolic tangent functionalty
+Shuterland Law for viscosity
+Crank-Niholson numerical method
+Runge-Kutta numerical method for implicit transient solution
+Posrprocessing Mach number, q-criterion, density gradient, etc
+Based on published Master thesis work : https://hdl.handle.net/20.500.14330/TES01000708066
+
 
