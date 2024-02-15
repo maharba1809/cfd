@@ -1,0 +1,297 @@
+!__________________________________________________
+       SUBROUTINE frontera_z ()
+!__________________________________________________
+
+      use dimensiones
+      use velocidades
+      use variables
+      use deltas
+      use consadim
+      use flow
+      use fronterapl
+      use jacobtools
+      use derivtools
+      use consderper
+      use consdernper
+
+      IMPLICIT NONE
+      integer :: i,j,k,l,m
+      real ri,pi,ui,vi,wi
+      real dudz,drdz,dvdz,dpdz,dwdz
+      real uci,ti,p_inf,xmach
+      real pl_l1,pl_l2,pl_l3,pl_l4,pl_l5
+      real pl_d1,pl_d2,pl_d3,pl_d4,pl_d5
+
+!______________________________________________
+!    z=1
+!______________________________________________
+
+      DO j=1,ny
+      DO i=1,nx
+
+        ui=u(i,j,1,1)
+        vi=u(i,j,1,2)
+        wi=u(i,j,1,3)
+        pi=pres(i,j,1)
+        ri=um(i,j,1,1)
+        ti=pi/ri
+
+        DO k=1,nz
+         dw(k)=u(i,j,k,3)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dwdz=jbn(i,j,1,9)*dw(1)
+
+        DO k=1,nz
+         dw(k)=u(i,j,k,1)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dudz=jbn(i,j,1,9)*dw(1)
+
+        DO k=1,nz
+         dw(k)=u(i,j,k,2)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dvdz=jbn(i,j,1,9)*dw(1)
+
+        DO k=1,nz
+         dw(k)=pres(i,j,k)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dpdz=jbn(i,j,1,9)*dw(1)
+
+        DO k=1,nz
+         dw(k)=um1(i,j,k,1)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        drdz=jbn(i,j,1,9)*dw(1)
+
+
+        uci=SQRT(gamma*c3*ti)
+        xmach=mach*wi/sqrt(ti)
+!__________________________________________________
+!       ENTRADA (w=0)
+!__________________________________________________
+        if(wi.le.0.0) then
+         p_inf=1.00
+         pl_l1=(wi-uci)*(c3*dpdz-ri*uci*dwdz)
+         pl_l5=5.*(1.-xmach*xmach)*uci*(pi-p_inf)*c3
+         pl_l2=wi*(uci*uci*drdz-c3*dpdz)
+         pl_l3=wi*dvdz
+         pl_l4=wi*dudz
+
+         pl_d1=(pl_l2+0.5*(pl_l1+pl_l5))/(uci*uci)
+         pl_d2=0.5*(pl_l1+pl_l5)
+         pl_d3=(pl_l5-pl_l1)/(2.*ri*uci)
+         pl_d4=pl_l3
+         pl_d5=pl_l4
+
+         frontz(1,1,i,j)=pl_d1
+         frontz(1,2,i,j)=ui*pl_d1+ri*pl_d5
+         frontz(1,3,i,j)=vi*pl_d1+ri*pl_d4
+         frontz(1,4,i,j)=wi*pl_d1+ri*pl_d3
+         frontz(1,5,i,j)=0.5*(ui*ui+vi*vi+wi*wi)*pl_d1+pl_d2/c2+  &
+                        ri*ui*pl_d5+ri*vi*pl_d4+ri*wi*pl_d3
+
+         imask(1,i,j)=0
+        else
+         pl_l1=(wi-uci)*(c3*dpdz-ri*uci*dudz)
+         pl_l5=pl_l1
+         pl_l2=0.5*c2*(pl_l1+pl_l5)
+         pl_l3=0.0
+         pl_l4=0.0
+
+         pl_d1=(pl_l2+0.5*(pl_l1+pl_l5))/(uci*uci)
+         pl_d2=0.0
+         pl_d2=0.0
+         pl_d3=0.0
+         pl_d4=0.0
+
+        frontz(1,1,i,j)=pl_d1
+        frontz(1,2,i,j)=0.0         
+        frontz(1,3,i,j)=0.0
+        frontz(1,4,i,j)=0.0
+        frontz(1,5,i,j)=0.0
+        imask(1,i,j)=1
+       endif
+       ENDDO
+      ENDDO
+!______________________________________________________________________
+!     z=nz
+!______________________________________________________________________
+     DO j=1,ny
+      DO i=1,nx
+
+        ui=u(i,j,nz,1)
+        vi=u(i,j,nz,2)
+        wi=u(i,j,nz,3)
+        pi=pres(i,j,nz)
+        ri=um(i,j,nz,1)
+        ti=pi/ri
+
+        DO k=1,nz
+         dw(k)=u(i,j,k,3)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dwdz=jbn(i,j,nz,9)*dw(nz)
+
+        DO k=1,nz
+         dw(k)=u(i,j,k,1)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dudz=jbn(i,j,nz,9)*dw(nz)
+
+        DO k=1,nz
+         dw(k)=u(i,j,k,2)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dvdz=jbn(i,j,nz,9)*dw(nz)
+
+        DO k=1,nz
+         dw(k)=pres(i,j,k)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dpdz=jbn(i,j,nz,9)*dw(nz)
+
+        DO k=1,nz
+         dw(k)=um1(i,j,k,1)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        drdz=jbn(i,j,nz,9)*dw(nz)
+
+
+        uci=SQRT(gamma*c3*ti)
+        xmach=mach*wi/sqrt(ti)
+
+        if(wi.ge.0.0) then
+         p_inf=1.00
+         pl_l5=(wi+uci)*(c3*dpdz+ri*uci*dwdz)
+         pl_l1=5.*(1.-xmach*xmach)*uci*(pi-p_inf)*c3
+         pl_l2=wi*(uci*uci*drdz-c3*dpdz)
+         pl_l3=wi*dvdz
+         pl_l4=wi*dudz
+
+         pl_d1=(pl_l2+0.5*(pl_l1+pl_l5))/(uci*uci)
+         pl_d2=0.5*(pl_l1+pl_l5)
+         pl_d3=(pl_l5-pl_l1)/(2.*ri*uci)
+         pl_d4=pl_l3
+         pl_d5=pl_l4
+
+         frontz(2,1,i,j)=pl_d1
+         frontz(2,2,i,j)=ui*pl_d1+ri*pl_d5
+         frontz(2,3,i,j)=vi*pl_d1+ri*pl_d4
+         frontz(2,4,i,j)=wi*pl_d1+ri*pl_d3
+         frontz(2,5,i,j)=0.5*(ui*ui+vi*vi+wi*wi)*pl_d1+pl_d2/c2+  &
+                        ri*ui*pl_d5+ri*vi*pl_d4+ri*wi*pl_d3
+
+         imask(2,i,j)=0
+        else
+         pl_l5=(wi+uci)*(c3*dpdz+ri*uci*dudz)
+         pl_l1=pl_l5
+         pl_l2=0.5*c2*(pl_l1+pl_l5)
+         pl_l3=0.0
+         pl_l4=0.0
+
+         pl_d1=(pl_l2+0.5*(pl_l1+pl_l5))/(uci*uci)
+         pl_d2=0.0
+         pl_d2=0.0
+         pl_d3=0.0
+         pl_d4=0.0
+
+        frontz(2,1,i,j)=pl_d1
+        frontz(2,2,i,j)=0.0
+        frontz(2,3,i,j)=0.0
+        frontz(2,4,i,j)=0.0
+        frontz(2,5,i,j)=0.0
+        imask(2,i,j)=1
+       endif
+       ENDDO
+      ENDDO
+      RETURN
+      END SUBROUTINE FRONTERA_Z
+
+!____________________________________________________________________
+      SUBROUTINE FZSOURCE (irk,neq)
+!____________________________________________________________________
+
+      use dimensiones
+      use variables
+      use fronterapl
+      use tiempo
+      implicit none
+      integer neq,irk,i,j,k,l,m
+      real deltat
+
+       IF(irk.eq.1)THEN
+        deltat=dt
+       ELSEIF(irk.eq.2)THEN
+        deltat=0.25*dt
+       ELSEIF(irk.eq.3)THEN
+        deltat=(2./3.)*dt
+       ENDIF 
+
+       Do j=1,ny
+        Do i=2,nx
+         um1(i,j,1,neq)=um1(i,j,1,neq)-deltat*frontz(1,neq,i,j)
+         um1(i,j,nz,neq)=um1(i,j,nz,neq)-deltat*frontz(2,neq,i,j)
+        Enddo
+       Enddo
+
+       RETURN
+       END SUBROUTINE FZSOURCE
+
+!__________________________________________________
+       SUBROUTINE frontera_z_val (irk)
+!__________________________________________________
+
+       use dimensiones
+       use velocidades
+       use variables
+       use consadim
+       use fronterapl
+       use frontera_uval
+       use ranaleo
+       IMPLICIT NONE
+       integer :: i,j,k,l,m,irk
+       real :: pe,te,re,eps,bruit
+
+       do j=1,ny
+       do i=1,nx
+        if(imask(1,i,j).eq.1) THEN
+          ue=um1(i,j,1,2)/um1(i,j,1,1)
+          ve=um1(i,j,1,3)/um1(i,j,1,1)
+          we=um1(i,j,1,4)/um1(i,j,1,1)
+          re=um1(i,j,1,1)
+          te=c2*(um1(i,j,1,5)-c1*re*(ue**2+ve**2+we**2))/re
+          pe=te*re
+       
+           u(i,j,1,1)=ue
+           u(i,j,1,2)=ve
+           u(i,j,1,3)=we
+           temp(i,j,1)=te
+           pres(i,j,1)=pe
+         endif
+        enddo
+        enddo
+
+       do j=1,ny
+       do i=1,nx
+        if(imask(2,i,j).eq.1) THEN
+          ue=um1(i,j,nz,2)/um1(i,j,nz,1)
+          ve=um1(i,j,nz,3)/um1(i,j,nz,1)
+          we=um1(i,j,nz,4)/um1(i,j,nz,1)
+          re=um1(i,j,nz,1)
+          te=c2*(um1(i,j,nz,5)-c1*re*(ue**2+ve**2+we**2))/re
+          pe=te*re
+
+           u(i,j,nz,1)=ue
+           u(i,j,nz,2)=ve
+           u(i,j,nz,3)=we
+           temp(i,j,nz)=te
+           pres(i,j,nz)=pe
+         endif
+        enddo
+        enddo
+        return
+        end subroutine frontera_z_val
+

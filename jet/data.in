@@ -1,0 +1,19 @@
+####################Flow parameters####################
+Nx----------------: 150
+Ny----------------: 109
+Nz----------------: 109
+Reynolds number   : 30000.00
+Prandtl           : 0.7
+viscosity model   : NONE
+turbulent Prandtl : 0.6
+grid file         : grid.bin
+restart file      : field_01.000
+Mach number       : 0.2
+Gamma             : 1.4
+Tmax              : 5.0
+CFL               : 0.5
+CVISC             : 0.5
+Constante filtro  : 0.4
+Numero Serie      : 7
+Tiempo gravar     : 0.01
+Tiempo vis. minmax: 0.00001

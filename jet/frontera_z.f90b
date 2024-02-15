@@ -1,0 +1,165 @@
+!________________________________________________
+       SUBROUTINE frontera_z ()
+!________________________________________________
+      use dimensiones
+      use velocidades
+      use variables
+      use deltas
+      use consadim
+      use flow
+      use fronterapl
+      use jacobtools
+      use derivtools
+      use consderper
+      use consdernper
+      use derivvel
+
+      IMPLICIT NONE
+      integer :: i,j,k,l,m
+      real rii,pii,uii,vii,wii,tii,uci
+      real rif,pif,uif,vif,wif,tif,ucf
+      real dudzi,drdzi,dvdzi,dpdzi,dwdzi
+      real dudzf,drdzf,dvdzf,dpdzf,dwdzf
+      real pl_l1,pl_l2,pl_l3,pl_l4,pl_l5
+      real pl_d1,pl_d2,pl_d3,pl_d4,pl_d5
+      real p_inf,xmachi,xmachf
+
+!______________________________________________
+!    z=1
+!______________________________________________
+
+      DO i=1,nx
+       DO j=1,ny
+        uii=u(i,j,1,1)
+        vii=u(i,j,1,2)
+        wii=u(i,j,1,3)
+        pii=pres(i,j,1)
+        rii=um(i,j,1,1)
+        tii=pii/rii
+
+        uif=u(i,j,nz,1)
+        vif=u(i,j,nz,2)
+        wif=u(i,j,nz,3)
+        pif=pres(i,j,nz)
+        rif=um(i,j,nz,1)
+        tif=pif/rif
+
+        dudzi=dvel(i,j,1,3)*jbn(i,j,1,9)
+        dvdzi=dvel(i,j,1,6)*jbn(i,j,1,9)
+        dwdzi=dvel(i,j,1,9)*jbn(i,j,1,9)
+        dudzf=dvel(i,j,nz,3)*jbn(i,j,nz,9)
+        dvdzf=dvel(i,j,nz,6)*jbn(i,j,nz,9)
+        dwdzf=dvel(i,j,nz,9)*jbn(i,j,nz,9)
+        DO k=1,nz
+         dw(k)=pres(i,j,k)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        dpdzi=jbn(i,j,1,9)*dw(1)
+        dpdzf=jbn(i,j,nz,9)*dw(nz)
+
+        DO k=1,nz
+         dw(k)=um(i,j,k,1)
+        ENDDO
+        call derivnper(nz,dw,aznp,bznp,cznp,deltaz)
+        drdzi=jbn(i,j,1,9)*dw(1)
+        drdzf=jbn(i,j,nz,9)*dw(nz)
+
+
+
+        uci=SQRT(gamma*c3*tii)
+        ucf=SQRT(gamma*c3*tif)
+        xmachi=mach*wii/sqrt(tii)
+        xmachf=mach*wif/sqrt(tif)
+!__________________________________________________
+!       PARED CON DESLIZAMIENTO (w=0)
+!__________________________________________________
+         pl_l1=(wii-uci)*(c3*dpdzi-rii*uci*dwdzi)
+         pl_l5=pl_l1
+         pl_l2=0.0
+         pl_l3=0.0
+         pl_l4=0.0
+
+         pl_d1=(pl_l2+0.5*(pl_l1+pl_l5))/(uci*uci)
+         pl_d2=0.5*(pl_l1+pl_l2)
+         pl_d3=(pl_l5-pl_l1)/(2.*rii*uci)
+         pl_d4=0.
+         pl_d5=0.
+
+         frontz(1,1,i,j)=pl_d1
+         frontz(1,2,i,j)=uif*pl_d1
+         frontz(1,3,i,j)=vif*pl_d1
+         frontz(1,4,i,j)=0.
+         frontz(1,5,i,j)=0.5*(uii*uii+vii*vii)*pl_d1+pl_d2/c2  
+
+         pl_l5=(wif+ucf)*(c3*dpdzf+rif*ucf*dwdzf)
+         pl_l1=pl_l5
+         pl_l2=0.0
+         pl_l3=0.0
+         pl_l4=0.0
+
+         pl_d1=(pl_l2+0.5*(pl_l1+pl_l5))/(ucf*ucf)
+         pl_d2=0.5*(pl_l1+pl_l2)
+         pl_d3=(pl_l5-pl_l1)/(2.*rif*ucf)
+         pl_d4=0.
+         pl_d5=0.
+
+         frontz(2,1,i,j)=pl_d1
+         frontz(2,2,i,j)=uif*pl_d1
+         frontz(2,3,i,j)=vif*pl_d1
+         frontz(2,4,i,j)=0.
+         frontz(2,5,i,j)=0.5*(uii*uii+vii*vii)*pl_d1+pl_d2/c2
+
+       ENDDO
+      ENDDO
+      RETURN
+      END SUBROUTINE FRONTERA_Z
+
+!____________________________________________________________________
+      SUBROUTINE FZSOURCE (irk,neq)
+!____________________________________________________________________
+
+      use dimensiones
+      use variables
+      use fronterapl
+      use tiempo
+      implicit none
+      integer neq,irk,i,j,k,l,m
+      real deltat
+
+       IF(irk.eq.1)THEN
+        deltat=dt
+       ELSEIF(irk.eq.2)THEN
+        deltat=0.25*dt
+       ELSEIF(irk.eq.3)THEN
+        deltat=(2./3.)*dt
+       ENDIF
+
+       Do j=1,ny
+        Do i=1,nx
+         um1(i,j,1,neq)=um1(i,j,1,neq)-deltat*frontz(1,neq,i,j)
+         um1(i,j,nz,neq)=um1(i,j,nz,neq)-deltat*frontz(2,neq,i,j)
+        Enddo
+       Enddo
+
+       RETURN
+       END SUBROUTINE FZSOURCE
+
+!__________________________________________________
+       SUBROUTINE frontera_z_val ()
+!__________________________________________________
+
+       use dimensiones
+       use velocidades
+       use variables
+
+       IMPLICIT NONE
+       integer :: i,j,k,l,m
+
+       DO j=1,ny
+       DO i=1,nx
+        um1(i,j,1,4)=0.0
+        um1(i,j,nz,4)=0.0
+       ENDDO
+       ENDDO
+       RETURN
+       END SUBROUTINE frontera_z_val
